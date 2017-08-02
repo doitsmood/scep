@@ -3,14 +3,14 @@
 $derPKCS7Envelope = file_get_contents('pkcs7envelope');
 $caKeyPEM = file_get_contents('./ca/rootCA.key');
 $caCertPEM = file_get_contents('./ca/rootCA.pem');
-echo extractCSRfromSCEPrequest ($derPKCS7Envelope);
+echo extractCSRfromSCEPrequest ($derPKCS7Envelope, $caKeyPEM, $caCertPEM);
 
-function extractCSRfromSCEPrequest ($derSCEPrequest) {
+function extractCSRfromSCEPrequest ($derSCEPrequest, $caKeyPEM, $caCertPEM) {
     if (!($encryptedDerSmime=verifyPKSC7Envelope($derSCEPrequest))) {
         return 'Invalid PKCS7 Envelope';
     }
     $csr = decryptSmime($encryptedDerSmime, $caKeyPEM, $caCertPEM);
-    echo 'decrypted';
+    
     return $csr;
 }
 
@@ -37,7 +37,11 @@ function decryptSmime($encryptedDerSMIME, $caKeyPEM, $caCertPEM) {
     $tempfileCaKey = tempnam('./temp', 'cakey');
     $tempfileDerInput = tempnam('./temp', 'input');
     $tempfileOutput = tempnam('./temp', 'output');
-    $command = "openssl smime -decrypt -inkey \"$tempfileCaKey\" -recip \"$tempfileCaCert\" -inform der -in \"$tempfileDerInput\" -out \"$tempfileOutput\" 2>&1";
+    file_put_contents($tempfileCaCert, $caCertPEM);
+    file_put_contents($tempfileCaKey, $caKeyPEM);
+    file_put_contents($tempfileDerInput, $encryptedDerSMIME);
+    $command = "openssl smime -decrypt -inkey \"$tempfileCaKey\" -recip \"$tempfileCaCert\" -inform der -in \"$tempfileDerInput\" -out \"$tempfileOutput\"";
+    exec($command);
     unlink($tempfileCaCert);
     unlink($tempfileCaKey);
     unlink($tempfileDerInput);
