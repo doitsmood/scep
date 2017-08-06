@@ -1,11 +1,14 @@
 <?php
 
+if(!isset($argv[1])) {
+    Die('Please add client-settings file as argument\n');
+}
+
+include($argv[1]);
+
 require 'scepHelperclass.php';
 $tempWorkDir = exec("mktemp -d -t 'scepclient'");
 $scep = new ScepHelper();
-
-$baseUrl = "http://10.0.1.18:8042/scepserver.php";
-
 
 
 // create curl resource 
@@ -26,9 +29,6 @@ exec("openssl x509 -in $tempWorkDir/ca.der -inform der -outform pem -out $tempWo
 curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=GetCACaps");
 $capabilities = curl_exec($ch);
 
-$signerCert = file_get_contents('clientCerts/scepsigner.pem');
-$signerKey = file_get_contents('clientCerts/scepsigner.key');
-$csr = file_get_contents('clientCerts/scep1.csr.der');
 $caPem = file_get_contents("$tempWorkDir/ca.pem");
 
 $request = $scep->pack($csr,$caPem,$signerCert,$signerKey);
