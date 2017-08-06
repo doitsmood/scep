@@ -6,7 +6,6 @@ class ScepHelper {
 
     function __construct() {
         $this->_tempWorkDir = exec("mktemp -d -t 'scephelper'");
-        print($this->_tempWorkDir);
     }
 
     function __destruct() {
@@ -19,7 +18,7 @@ class ScepHelper {
 
     public function pack($data, $encryptCert, $signerCert, $signerKey) {
         $encryptedData = $this->_encrypt($data, $encryptCert);
-        $signedData = $this->_sign($encryptedData, $signerCert, $signerKey);
+        $signedData = $this->_signPK7($encryptedData, $signerCert, $signerKey);
         return $signedData;
     }
 
@@ -30,7 +29,7 @@ class ScepHelper {
     public function unpack($envelope, $encryptCert, $encryptKey) {
         list($signer, $encryptedData) = $this->_verifySignature($envelope);
         $data = $this->_decrypt($encryptedData, $encryptCert, $encryptKey);
-        return $data;
+        return array($signer, $data);
     }
 
     /*
@@ -39,9 +38,9 @@ class ScepHelper {
 
     public function createDegen($certificate) {
         file_put_contents("$this->_tempWorkDir/certificate.pem", $certificate);
-        
+
         exec("openssl crl2pkcs7 -nocrl -certfile $this->_tempWorkDir/certificate.pem -outform DER -out $this->_tempWorkDir/degenerate.p7");
-        
+
         return file_get_contents("$this->_tempWorkDir/degenerate.p7");
     }
 
@@ -50,11 +49,22 @@ class ScepHelper {
      */
 
     public function readDegen($degenerate) {
-        file_put_contents("$this->_tempWorkDir/degenerateEnc.p7",$degenerate);
-        
+        file_put_contents("$this->_tempWorkDir/degenerateEnc.p7", $degenerate);
+
         exec("openssl pkcs7 -in $this->_tempWorkDir/degenerateEnc.p7 -inform DER -print_certs -out $this->_tempWorkDir/cert.pem");
-        
+
         return file_get_contents("$this->_tempWorkDir/cert.pem");
+    }
+
+    public function signCsr($csrDer, $signerCert, $signerKey, $extensionFile, $CAserialFile, $days) {
+        file_put_contents("$this->_tempWorkDir/csr.der", $csrDer);
+        file_put_contents("$this->_tempWorkDir/signerCert", $signerCert);
+        file_put_contents("$this->_tempWorkDir/signerKey", $signerKey);
+
+        exec("openssl req -in $this->_tempWorkDir/csr.der -inform der -outform pem -out $this->_tempWorkDir/csr.pem");
+        exec("openssl x509 -req -in $this->_tempWorkDir/csr.pem -CA $this->_tempWorkDir/signerCert -CAkey $this->_tempWorkDir/signerKey -extensions exts -extfile $extensionFile -days $days -CAcreateserial -CAserial $CAserialFile -out $this->_tempWorkDir/certificate.pem");
+        
+        return file_get_contents("$this->_tempWorkDir/certificate.pem");
     }
 
     /*
@@ -81,7 +91,7 @@ class ScepHelper {
      * hence the additional steps
      */
 
-    private function _sign($data, $signerCert, $signerKey) {
+    private function _signPK7($data, $signerCert, $signerKey) {
         file_put_contents("$this->_tempWorkDir/date2sign", $data);
         file_put_contents("$this->_tempWorkDir/signercert", $signerCert);
         file_put_contents("$this->_tempWorkDir/signerkey", $signerKey);
