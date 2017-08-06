@@ -66,6 +66,27 @@ class ScepHelper {
         
         return file_get_contents("$this->_tempWorkDir/certificate.pem");
     }
+    
+    /*
+     * Extract the public key of the SCEP server
+     * 
+     * GetCACert returns pkcs7 degenerate binary with one or more certificates (may contain certificate chain upto Root CA)
+     * This function returns the public key which should be used when encrypting certificate request send to SCEP server
+     * 
+     */
+    public function extractCAFromGetCACert($certDerBlob) {
+        file_put_contents("$this->_tempWorkDir/certDerBlob", $certDerBlob);
+        
+        $isPkcs7 = exec("openssl asn1parse -inform DER -in $this->_tempWorkDir/certDerBlob | grep pkcs7-signedData");
+        if ("" == $isPkcs7) {
+            file_put_contents("$this->_tempWorkDir/ca.der", $certDerBlob);
+            exec("openssl x509 -in $this->_tempWorkDir/ca.der -inform DER -outform PEM -out $this->_tempWorkDir/ca.pem");
+            return file_get_contents("$this->_tempWorkDir/ca.pem");
+        }
+        $certificates = $this->readDegen($certDerBlob);
+        preg_match_all('/subject=.+-----END CERTIFICATE-----/sU', $certificates, $matches);
+        return $matches[0][0];
+    }
 
     /*
      * Encrypts a binary blob of data

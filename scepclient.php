@@ -7,7 +7,6 @@ if(!isset($argv[1])) {
 include($argv[1]);
 
 require 'scepHelperclass.php';
-$tempWorkDir = exec("mktemp -d -t 'scepclient'");
 $scep = new ScepHelper();
 
 
@@ -21,17 +20,14 @@ curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
 // $output contains the output string 
-$caDer = curl_exec($ch);
-file_put_contents("$tempWorkDir/ca.der", $caDer);
-file_put_contents("ca.der",$caDer);
-exit();
-exec("openssl x509 -in $tempWorkDir/ca.der -inform der -outform pem -out $tempWorkDir/ca.pem");
+$caBlob = curl_exec($ch);
+$caPem = $scep->extractCAFromGetCACert($caBlob);
 
 // Fetch CA Capabilities
 curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=GetCACaps");
 $capabilities = curl_exec($ch);
 
-$caPem = file_get_contents("$tempWorkDir/ca.pem");
+
 
 $request = $scep->pack($csr,$caPem,$signerCert,$signerKey);
 
@@ -55,7 +51,5 @@ echo $scep->readDegen($degen);
 
 // close curl resource to free up system resources 
 curl_close($ch);
-
-exec("rm -rf \"$tempWorkDir\"");
 
 ?>
