@@ -15,14 +15,16 @@ $scep = new ScepHelper();
 $ch = curl_init();
 
 // set url 
-curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=GetCACert");
-
+curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=GetCACert&message=SCEP%20Authority");
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 //return the transfer as a string 
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
 // $output contains the output string 
 $caDer = curl_exec($ch);
 file_put_contents("$tempWorkDir/ca.der", $caDer);
+file_put_contents("ca.der",$caDer);
+exit();
 exec("openssl x509 -in $tempWorkDir/ca.der -inform der -outform pem -out $tempWorkDir/ca.pem");
 
 // Fetch CA Capabilities
