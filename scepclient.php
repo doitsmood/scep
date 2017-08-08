@@ -60,13 +60,10 @@ if (!$envelopedCert) {
 }
 
 file_put_contents('answer', $envelopedCert);
-
+exit();
 list($signer, $degen) = $scep->unpack($envelopedCert, $signerCert, $signerKey);
 
 echo $scep->readDegen($degen);
-
-
-
 
 // close curl resource to free up system resources 
 curl_close($ch);
