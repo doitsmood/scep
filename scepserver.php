@@ -33,11 +33,24 @@ if ('GET' == $_SERVER['REQUEST_METHOD'] AND 'GetCACaps' == $_GET['operation']) {
 if ('POST' == $_SERVER['REQUEST_METHOD'] AND 'PKIOperation' == $_GET['operation']) {
     header('Content-Type: application/x-pki-message');
 
-    list($clientCert,$csrDer) = $scep->unpack(file_get_contents('php://input'), $caCertPEM, $caKeyPEM);
+    list($clientCert, $csrDer) = $scep->unpack(file_get_contents('php://input'), $caCertPEM, $caKeyPEM);
     $signedCert = $scep->signCsr($csrDer, $caCertPEM, $caKeyPEM, $extensions, $serial, 25);
     $degen = $scep->createDegen($signedCert);
     $response = $scep->pack($degen, $clientCert, $caCertPEM, $caKeyPEM);
-    
+
     echo $response;
 }
- ?>
+
+if ('GET' == $_SERVER['REQUEST_METHOD'] AND 'PKIOperation' == $_GET['operation'] AND isset($_GET['message'])) {
+    header('Content-Type: application/x-pki-message');
+
+    $pk7DerEvelope = base64_decode($_GET['message']);
+//    file_put_contents('receivedmessage', $pk7DerEvelope);
+    list($clientCert, $csrDer) = $scep->unpack($pk7DerEvelope, $caCertPEM, $caKeyPEM);
+    $signedCert = $scep->signCsr($csrDer, $caCertPEM, $caKeyPEM, $extensions, $serial, 25);
+    $degen = $scep->createDegen($signedCert);
+    $response = $scep->pack($degen, $clientCert, $caCertPEM, $caKeyPEM);
+
+    echo $response;
+}
+?>
