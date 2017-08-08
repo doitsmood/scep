@@ -19,8 +19,13 @@ if ('GET' == $_SERVER['REQUEST_METHOD'] AND 'GetCACert' == $_GET['operation']) {
 if ('GET' == $_SERVER['REQUEST_METHOD'] AND 'GetCACaps' == $_GET['operation']) {
     header('Content-Type: text/plain');
     $capabilities = array(
+//        'SHA-256',
+//        'POSTPKIOperation',
+        'Renewal',
+        'SHA-512',
         'SHA-256',
-        'POSTPKIOperation',
+        'SHA-1',
+        'DES3',
     );
     echo implode("\n", $capabilities);
 }

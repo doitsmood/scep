@@ -26,8 +26,8 @@ $caPem = $scep->extractCAFromGetCACert($caBlob);
 // Fetch CA Capabilities
 curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=GetCACaps&message=SCEP%20Authority");
 $capabilities = curl_exec($ch);
-var_dump($capabilities);
-exit();
+//var_dump($capabilities);
+
 $request = $scep->pack($csr,$caPem,$signerCert,$signerKey);
 
 curl_setopt($ch, CURLOPT_URL, "$baseUrl?operation=PKIOperation");                                                                      
